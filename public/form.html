@@ -111,18 +111,40 @@
             }, false);
         </script>
 
-        <!-- Captcha check -->
+        <!-- Captcha check & submit -->
         <script>
             function validate_form() {
                 const recaptcha_box_checked = (grecaptcha.getResponse()) ? true : false;
                 if (recaptcha_box_checked) { 
-                    return true;
+                    submit_form()
                 }
                 else {
                     alert("Captcha Validation Failed");
                 return false;
                 }
             };
+
+            function submit_form() {
+                const appealForm = document.querySelector(
+                'form[name="appeal"]'
+                );
+                const formData = new FormData(appealForm);
+                fetch("/submit", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: new URLSearchParams(formData).toString(),
+                })
+                .then(() => {
+                    alert("Form successfully submitted");
+                    myForm.reset();
+                })
+                .catch(() => {
+                    alert(
+                    "There was a problem submitting the form. Kindly try again later."
+                    );
+                });
+            };
+
         </script>
     </body>
 </html>
