@@ -21,7 +21,7 @@
                 <h2 id="username" class="ml-3 mb-0 align-self-center"></h2>
             </div>
 
-            <form class="mt-3" method="post" name="appeal" action="/success" onsubmit="return validate_form();" data-netlify-recaptcha="true" netlify>
+            <form class="mt-3" method="post" name="appeal" onsubmit="return validate_form();" data-netlify-recaptcha="true" action="/success" netlify>
                 <input type="hidden" id="token" name="token">
                 <div class="form-group">
                     <label for="banReason">Why were you banned?</label>
@@ -109,7 +109,10 @@
                     event.target.parentElement.classList.add( "checked" );
                 }
             }, false);
+        </script>
 
+        <!-- Captcha check -->
+        <script>
             function validate_form() {
                 const recaptcha_box_checked = (grecaptcha.getResponse()) ? true : false;
                 if (recaptcha_box_checked) { 
