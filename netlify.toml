@@ -5,6 +5,8 @@
 
 [build.environment]
   NODE_VERSION = "24"
+  # The Turnstile site key is public by design and is embedded in form.html at build time.
+  SECRETS_SCAN_OMIT_KEYS = "TURNSTILE_SITE_KEY"
   AWS_LAMBDA_JS_RUNTIME = "nodejs24.x"
 
 [build.processing]
