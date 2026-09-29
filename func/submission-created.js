@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 
 import { API_ENDPOINT, MAX_EMBED_FIELD_CHARS, MAX_EMBED_FOOTER_CHARS } from "./helpers/discord-helpers.js";
 import { createJwt, decodeJwt } from "./helpers/jwt-helpers.js";
+import { verifyTurnstile } from "./helpers/turnstile-helpers.js";
 import { getBan, isBlocked } from "./helpers/user-helpers.js";
 
 export async function handler(event, context) {
@@ -21,7 +22,8 @@ export async function handler(event, context) {
             banReason: params.get("banReason") || undefined,
             appealText: params.get("appealText") || undefined,
             futureActions: params.get("futureActions") || undefined,
-            token: params.get("token") || undefined
+            token: params.get("token") || undefined,
+            turnstileResponse: params.get("cf-turnstile-response") || undefined
         };
     }
 
@@ -38,6 +40,19 @@ export async function handler(event, context) {
                     "Location": `/error?msg=${encodeURIComponent("You cannot submit ban appeals with this Discord account.")}`,
                 },
             };
+        }
+
+        if (process.env.TURNSTILE_SECRET_KEY) {
+            const turnstileResponse = payload.turnstileResponse ?? payload["cf-turnstile-response"];
+            const remoteIp = event.headers && event.headers["x-nf-client-connection-ip"];
+            if (!await verifyTurnstile(turnstileResponse, process.env.TURNSTILE_SECRET_KEY, remoteIp)) {
+                return {
+                    statusCode: 303,
+                    headers: {
+                        "Location": `/error?msg=${encodeURIComponent("Captcha verification failed. Please go back and try again.")}`,
+                    },
+                };
+            }
         }
 
         const message = {

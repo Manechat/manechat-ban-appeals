@@ -25,8 +25,25 @@ function replaceInFile(file, original, replacement, callback) {
     });
 }
 
+function configureTurnstile(file) {
+    // Synchronous on purpose: form.html is also rewritten asynchronously further down.
+    const original = fs.readFileSync(file, "UTF-8");
+    let updated;
+
+    if (process.env.TURNSTILE_SITE_KEY && process.env.TURNSTILE_SECRET_KEY) {
+        updated = original.replace("TURNSTILE_SITE_KEY", process.env.TURNSTILE_SITE_KEY);
+    } else {
+        console.log("TURNSTILE_SITE_KEY and TURNSTILE_SECRET_KEY are not both set, captcha is disabled.");
+        updated = original.replace(/[ \t]*<!-- turnstile:start -->[\s\S]*?<!-- turnstile:end -->\r?\n?/, "");
+    }
+
+    fs.writeFileSync(file, updated, "UTF-8");
+}
+
 async function main() {
     const func = path.resolve(import.meta.dirname, "func");
+
+    configureTurnstile(path.resolve(import.meta.dirname, "public", "form.html"));
 
     const url = process.env.CONTEXT === "production" ? process.env.URL : process.env.DEPLOY_PRIME_URL;
     replaceInFile(path.resolve(func, "oauth.js"), /DEPLOY_PRIME_URL/g, `"${url}"`);

@@ -96,3 +96,13 @@ When you use the `DISCORD_WEBHOOK_URL`, you don't need to specify the `DISCORD_B
 ## Custom background image
 
 If you want to use an image as a background, go to `/public/script.js` and put the path to the file located in the public folder in the `backgroundImageUrl` variable. The background will be applied to each route.
+
+## Captcha (Cloudflare Turnstile)
+
+The appeal form can be protected by [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/). It is optional and is only enabled when both variables below are set:
+
+1. In the Cloudflare dashboard, go to **Turnstile** and add a widget for your site's domain (`appeals.manechat.net`).
+
+2. In your Netlify site's environment variables, create `TURNSTILE_SITE_KEY` with the widget's site key and `TURNSTILE_SECRET_KEY` with its secret key.
+
+3. Redeploy the site. The site key is inserted into the form at build time, and the secret key is used by the submission function to verify each response with Cloudflare. If either variable is missing, the captcha is left out of the form and submissions are not verified.
