@@ -11,19 +11,19 @@
         <title>Error</title>
     </head>
     <body class="d-flex h-100 justify-content-center align-items-center">
-        <div class="text-center">
-            <h1 id="msg" style="color: #f04747;">
-                No ban for your Discord account was found on this server.<br>
-                Maybe try joining the server from a different IP address?
-            </h1>
-            <a href="/" class="text-white">Back to start.</a>
+        <div class="container text-center mb-0 justify-content-center align-items-center">
+            <h1 id="msg" class="text-danger"></h1>
+            <a class="btn mt-4" id="login" href="/">
+                Back to start.
+            </a>
         </div>
-
         <script>
-            const msg = new URLSearchParams(document.location.search.substring(1)).get("msg");
-            if (msg) {
-                document.getElementById("msg").innerText = msg;
-            }
+            const msg = new URLSearchParams(
+                document.location.search.substring(1)
+            ).get("msg");
+            const msgContainer = document.getElementById("msg");
+            msgContainer.innerText = msg ? msg : "No ban for your Discord account was found on this server. Maybe try joining the server from a different IP address?";
         </script>
+        <script src="script.js"></script>
     </body>
 </html>

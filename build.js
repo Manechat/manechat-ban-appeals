@@ -1,10 +1,8 @@
-import Eris from "eris";
+import fetch from 'node-fetch';
 import fs from "fs";
 import path from "path";
 import process from "process";
-import { fileURLToPath } from 'url';
-
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+import { API_ENDPOINT } from "./func/helpers/discord-helpers.js";
 
 function assertSuccess(err) {
     if (err) {
@@ -28,7 +26,7 @@ function replaceInFile(file, original, replacement, callback) {
 }
 
 async function main() {
-    const func = path.resolve(__dirname, "func");
+    const func = path.resolve(import.meta.dirname, "func");
 
     const url = process.env.CONTEXT === "production" ? process.env.URL : process.env.DEPLOY_PRIME_URL;
     replaceInFile(path.resolve(func, "oauth.js"), /DEPLOY_PRIME_URL/g, `"${url}"`);
@@ -36,23 +34,34 @@ async function main() {
     replaceInFile(path.resolve(func, "submission-created.js"), "DEPLOY_PRIME_URL", `"${url}"`, () => {
         if (!process.env.USE_NETLIFY_FORMS) {
             fs.rename(path.resolve(func, "submission-created.js"), path.resolve(func, "submit-appeal.js"), assertSuccess);
-            replaceInFile(path.resolve(__dirname, "public", "form.html"), "action=\"/success\" netlify", "action=\"/.netlify/functions/submit-appeal\"");
+            replaceInFile(path.resolve(import.meta.dirname, "public", "form.html"), "action=\"/success\" netlify", "action=\"/.netlify/functions/submit-appeal\"");
         }
     });
 
-    if (process.env.DISABLE_UNBAN_LINK) {
+    if (process.env.DISABLE_UNBAN_LINK || process.env.DISCORD_WEBHOOK_URL) {
         fs.unlink(path.resolve(func, "unban.js"), assertSuccess);
     }
 
-    // Make sure the bot connected to the gateway at least once.
-    const bot = new Eris(process.env.DISCORD_BOT_TOKEN);
-    bot.on("ready", () => bot.disconnect());
-    
-    try {
-        await bot.connect();
-    } catch (e) {
-        console.log(e);
-        process.exit(1);
+    if(!process.env.DISCORD_WEBHOOK_URL) {
+        // Make sure the bot token & env variables are valid.
+        const init = {
+            method: "GET",
+            headers: {
+                "Authorization": `Bot ${process.env.DISCORD_BOT_TOKEN}`,
+            },
+        };
+
+        const results = await Promise.all([
+            fetch(`${API_ENDPOINT}/guilds/${process.env.GUILD_ID}/bans?limit=1`, init),
+            fetch(`${API_ENDPOINT}/channels/${process.env.APPEALS_CHANNEL}`, init),
+        ]);
+
+        results.forEach(result => {
+            if(!result.ok) {
+                console.log(result.statusText);
+                process.exit(1);
+            }
+        });
     }
 }
 
