@@ -61,3 +61,48 @@ Users that spam requests can be blocked by creating an environment variable call
    ![](https://i.imgur.com/jNKgS2B.png)
 
 6. Redeploy the site with **Deploys** -> **Trigger deploy** -> **Deploy site**.
+
+### Discord user block
+
+Users can also be banned by adding `/p` or `/perm` to the Discord ban reason.
+
+## Hiding the ban reason
+
+By default, the ban reason is displayed until `/h` or `/hide` is added to it. To globally disable the ban reason follow the steps below:
+
+1. On your [Netlify dashboard](https://app.netlify.com), click **Deploys** and navigate to **Deploy settings**, and then to the **Environment** option.
+
+2. Under **Environment variables**, click **Edit variables**.
+
+3. Click **New variable**, and create an environment variable with `ALWAYS_HIDE_BAN_REASON` as its key. Use `true` as the value.
+
+4. Redeploy the site with **Deploys** -> **Trigger deploy** -> **Deploy site**.
+
+
+## Using webhooks
+
+When you use the `DISCORD_WEBHOOK_URL`, you don't need to specify the `DISCORD_BOT_TOKEN`, `GUILD_ID`, and `APPEALS_CHANNEL` in the environment variables. The message will be sent using the webhook without an unban button, the form will not attempt to check if the user is actually banned before letting them appeal, and the permanent ban functionality does not work. To do this:
+
+1. On your [Netlify dashboard](https://app.netlify.com), click **Deploys** and navigate to **Deploy settings**, and then to the **Environment** option.
+
+2. Under **Environment variables**, click **Edit variables**.
+
+3. Right-click on any channel and click **Edit Channel** -> **Integrations** -> **Webhooks** -> **Copy Webhook URL**.
+
+4. Click **New variable**, and create an environment variable with `DISCORD_WEBHOOK_URL` as its key. For the value, paste the Webhook URL you copied in the previous step.
+
+5. Redeploy the site with **Deploys** -> **Trigger deploy** -> **Deploy site**.
+
+## Custom background image
+
+If you want to use an image as a background, go to `/public/script.js` and put the path to the file located in the public folder in the `backgroundImageUrl` variable. The background will be applied to each route.
+
+## Captcha (Cloudflare Turnstile)
+
+The appeal form can be protected by [Cloudflare Turnstile](https://developers.cloudflare.com/turnstile/). It is optional and is only enabled when both variables below are set:
+
+1. In the Cloudflare dashboard, go to **Turnstile** and add a widget for your site's domain (`appeals.manechat.net`).
+
+2. In your Netlify site's environment variables, create `TURNSTILE_SITE_KEY` with the widget's site key and `TURNSTILE_SECRET_KEY` with its secret key.
+
+3. Redeploy the site. The site key is inserted into the form at build time, and the secret key is used by the submission function to verify each response with Cloudflare. If either variable is missing, the captcha is left out of the form and submissions are not verified.

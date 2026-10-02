@@ -4,13 +4,13 @@
   command = "node --unhandled-rejections=strict build.js"
 
 [build.environment]
-  AWS_LAMBDA_JS_RUNTIME = "nodejs18.x"
+  NODE_VERSION = "24"
+  # The Turnstile site key is public by design and is embedded in form.html at build time.
+  SECRETS_SCAN_OMIT_KEYS = "TURNSTILE_SITE_KEY"
+  AWS_LAMBDA_JS_RUNTIME = "nodejs24.x"
 
 [build.processing]
-  css = { bundle = true, minify = true }
-  js = { bundle = true, minify = true }
   html = { pretty_urls = true }
-  images = { compress = true }
 
 [functions]
   node_bundler = "esbuild"

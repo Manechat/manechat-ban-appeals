@@ -2,6 +2,7 @@ import fetch from 'node-fetch';
 
 import { API_ENDPOINT, MAX_EMBED_FIELD_CHARS, MAX_EMBED_FOOTER_CHARS } from "./helpers/discord-helpers.js";
 import { createJwt, decodeJwt } from "./helpers/jwt-helpers.js";
+import { verifyTurnstile } from "./helpers/turnstile-helpers.js";
 import { getBan, isBlocked } from "./helpers/user-helpers.js";
 
 export async function handler(event, context) {
@@ -21,7 +22,8 @@ export async function handler(event, context) {
             banReason: params.get("banReason") || undefined,
             appealText: params.get("appealText") || undefined,
             futureActions: params.get("futureActions") || undefined,
-            token: params.get("token") || undefined
+            token: params.get("token") || undefined,
+            turnstileResponse: params.get("cf-turnstile-response") || undefined
         };
     }
 
@@ -39,7 +41,20 @@ export async function handler(event, context) {
                 },
             };
         }
-        
+
+        if (process.env.TURNSTILE_SECRET_KEY) {
+            const turnstileResponse = payload.turnstileResponse ?? payload["cf-turnstile-response"];
+            const remoteIp = event.headers && event.headers["x-nf-client-connection-ip"];
+            if (!await verifyTurnstile(turnstileResponse, process.env.TURNSTILE_SECRET_KEY, remoteIp)) {
+                return {
+                    statusCode: 303,
+                    headers: {
+                        "Location": `/error?msg=${encodeURIComponent("Captcha verification failed. Please go back and try again.")}`,
+                    },
+                };
+            }
+        }
+
         const message = {
             embed: {
                 title: "New appeal submitted!",
@@ -65,7 +80,7 @@ export async function handler(event, context) {
             }
         }
 
-        if (process.env.GUILD_ID) {
+        if (process.env.GUILD_ID && !process.env.DISCORD_WEBHOOK_URL) {
             try {
                 const ban = await getBan(userInfo.id, process.env.GUILD_ID, process.env.DISCORD_BOT_TOKEN);
                 if (ban !== null && ban.reason) {
@@ -95,14 +110,27 @@ export async function handler(event, context) {
             }
         }
 
-        const result = await fetch(`${API_ENDPOINT}/channels/${encodeURIComponent(process.env.APPEALS_CHANNEL)}/messages`, {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "Authorization": `Bot ${process.env.DISCORD_BOT_TOKEN}`
-            },
-            body: JSON.stringify(message)
-        });
+        let result;
+        if (!process.env.DISCORD_WEBHOOK_URL) {
+            result = await fetch(`${API_ENDPOINT}/channels/${encodeURIComponent(process.env.APPEALS_CHANNEL)}/messages`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "Authorization": `Bot ${process.env.DISCORD_BOT_TOKEN}`
+                },
+                body: JSON.stringify(message)
+            });
+        } else {
+            result = await fetch(`${process.env.DISCORD_WEBHOOK_URL}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    embeds: [message.embed]
+                })
+            });
+        }
 
         if (result.ok) {
             if (process.env.USE_NETLIFY_FORMS) {
